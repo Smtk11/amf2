@@ -6,7 +6,7 @@ from datetime import datetime
 st.set_page_config(page_title="Examen AMF par thème", layout="wide")
 
 # Chargement de la base
-df = pd.read_csv("questions_amf_structuré.csv")
+df = pd.read_csv("questions_amf_structure.csv")
 
 # 🎯 Interface de filtrage
 st.sidebar.title("🧠 Paramètres du test")
