@@ -173,11 +173,6 @@ if "questions" in st.session_state and st.session_state.step >= len(st.session_s
             del st.session_state[key]
         st.experimental_rerun()
 
-# Extrait de la structure principale, modifiée pour inclure un "mode examen"
-import streamlit as st
-import pandas as pd
-from datetime import datetime
-
 st.set_page_config(page_title="Examen AMF - Mode", layout="wide")
 
 df = pd.read_csv("questions_amf_structure.csv")
