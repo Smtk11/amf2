@@ -70,7 +70,7 @@ if "questions" in st.session_state and st.session_state.step < len(st.session_st
             if choix == row["bonne_reponse"]:
                 st.session_state.feedback[i] = "✅ Bonne réponse !"
             else:
-                st.session_state.feedback[i] = f"❌ Mauvaise réponse. La bonne réponse était : {row['bonne_reponse']} - {row[f'Choix_{row['bonne_reponse']}']}"
+                st.session_state.feedback[i] = f"❌ Mauvaise réponse. La bonne réponse était \n : {row['bonne_reponse']} - {row[f'Choix_{row['bonne_reponse']}']}"
             st.session_state.validated[i] = True
 
     if st.session_state.feedback[i]:
