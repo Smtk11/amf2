@@ -152,3 +152,14 @@ if "questions" in st.session_state and st.session_state.step >= len(st.session_s
         for key in list(st.session_state.keys()):
             del st.session_state[key]
         st.experimental_rerun()
+
+
+# 🗂️ Historique complet des tests enregistrés
+st.sidebar.markdown("---")
+st.sidebar.markdown("🗂️ **Historique des tests**")
+try:
+    score_log = pd.read_csv("scores.csv")
+    score_log = score_log.sort_values(by="date", ascending=False)
+    st.sidebar.dataframe(score_log[["date", "score", "total", "durée (min:sec)"]].reset_index(drop=True))
+except FileNotFoundError:
+    st.sidebar.info("Aucun test encore enregistré.")
