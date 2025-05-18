@@ -5,7 +5,6 @@ from datetime import datetime
 
 st.set_page_config(page_title="Examen AMF par thème", layout="wide")
 
-# Chargement
 df = pd.read_csv("questions_amf_structure.csv")
 
 # 🎯 Interface de filtrage
@@ -41,7 +40,6 @@ if st.sidebar.button("🚀 Lancer le test") and not filtered.empty:
     st.session_state.start_time = datetime.now()
     st.session_state.questions = filtered.sample(min(nb_questions, len(filtered))).reset_index(drop=True)
 
-# Affichage de la question
 if "questions" in st.session_state and st.session_state.step < len(st.session_state.questions):
     i = st.session_state.step
     row = st.session_state.questions.iloc[i]
@@ -70,7 +68,7 @@ if "questions" in st.session_state and st.session_state.step < len(st.session_st
             if choix == row["bonne_reponse"]:
                 st.session_state.feedback[i] = "✅ Bonne réponse !"
             else:
-                st.session_state.feedback[i] = f"❌ Mauvaise réponse. La bonne réponse était \n : {row['bonne_reponse']} - {row[f'Choix_{row['bonne_reponse']}']}"
+                st.session_state.feedback[i] = f"❌ Mauvaise réponse. La bonne réponse était : {row['bonne_reponse']} - {row[f'Choix_{row['bonne_reponse']}']}"
             st.session_state.validated[i] = True
 
     if st.session_state.feedback[i]:
@@ -89,7 +87,7 @@ if "questions" in st.session_state and st.session_state.step < len(st.session_st
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-# Résultats finaux
+# Résultat final
 if "questions" in st.session_state and st.session_state.step >= len(st.session_state.questions):
     end_time = datetime.now()
     elapsed = end_time - st.session_state.start_time
@@ -106,8 +104,8 @@ if "questions" in st.session_state and st.session_state.step >= len(st.session_s
         correct = row["bonne_reponse"]
         is_correct = selected == correct
         results.append({
-            "chapitre": row["theme"],
-            "sous-thème": row["sous_theme"],
+            "categorie": row["categorie"],
+            "sous_theme": row["sous_theme"],
             "question": row["question"],
             "votre réponse": f"{selected} - {row[f'Choix_{selected}']}" if selected else "Aucune",
             "bonne réponse": f"{correct} - {row[f'Choix_{correct}']}",
@@ -116,7 +114,6 @@ if "questions" in st.session_state and st.session_state.step >= len(st.session_s
 
     st.dataframe(pd.DataFrame(results))
 
-    
     if st.button("💾 Enregistrer ce score"):
         now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         score_df = pd.DataFrame([{
@@ -133,8 +130,25 @@ if "questions" in st.session_state and st.session_state.step >= len(st.session_s
         score_df.to_csv("scores.csv", index=False)
         st.success("Score enregistré avec succès ✅")
 
-    if st.button("🔁 Refaire un test"):
+    if st.button("📊 Voir mes résultats par type de question"):
+        summary_data = []
+        for j, row in st.session_state.questions.iterrows():
+            selected = st.session_state.choices[j]
+            correct = row["bonne_reponse"]
+            is_correct = selected == correct
+            summary_data.append({
+                "categorie": row["categorie"],
+                "sous_theme": row["sous_theme"],
+                "correct": int(is_correct),
+                "total": 1
+            })
+        df_summary = pd.DataFrame(summary_data)
+        df_grouped = df_summary.groupby(["categorie", "sous_theme"]).sum().reset_index()
+        df_grouped["score"] = df_grouped["correct"].astype(str) + "/" + df_grouped["total"].astype(str)
+        st.markdown("### 🧾 Compte rendu par catégorie et sous-thème")
+        st.dataframe(df_grouped[["categorie", "sous_theme", "score"]])
 
+    if st.button("🔁 Refaire un test"):
         for key in list(st.session_state.keys()):
             del st.session_state[key]
         st.experimental_rerun()
