@@ -66,6 +66,11 @@ if st.session_state.exam_mode:
         st.session_state.start_time = datetime.now()
 
     if st.session_state.step < len(st.session_state.questions):
+        now = datetime.now()
+        elapsed = now - st.session_state.start_time
+        minutes = elapsed.seconds // 60
+        seconds = elapsed.seconds % 60
+        st.markdown(f"⏱️ Temps écoulé : **{minutes} min {seconds:02d} sec**")
         i = st.session_state.step
         row = st.session_state.questions.iloc[i]
 
@@ -92,13 +97,15 @@ if st.session_state.exam_mode:
         st.header("🎯 Résultat de l'examen")
         results_df = pd.DataFrame(st.session_state.choices)
         correct_a = results_df[(results_df["categorie"] == "A") & (results_df["selected"] == results_df["correct"])].shape[0]
+        total_a = results_df[results_df["categorie"] == "A"].shape[0]
         correct_c = results_df[(results_df["categorie"] == "C") & (results_df["selected"] == results_df["correct"])].shape[0]
+        total_c = results_df[results_df["categorie"] == "C"].shape[0]
         total = len(results_df)
         score_pct = round((st.session_state.score / total) * 100, 2)
 
         st.markdown(f"**Score final : {st.session_state.score} / {total} soit {score_pct}%**")
-        st.markdown(f"- ✅ Bonnes réponses Catégorie A : **{correct_a}**")
-        st.markdown(f"- ✅ Bonnes réponses Catégorie C : **{correct_c}**")
+        st.markdown(f"- ✅ Bonnes réponses Catégorie A : **{correct_a} / {total_a}**")
+        st.markdown(f"- ✅ Bonnes réponses Catégorie C : **{correct_c} / {total_c}**")
 
         chap_summary = results_df.copy()
         chap_summary["is_correct"] = chap_summary["selected"] == chap_summary["correct"]
