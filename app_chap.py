@@ -127,7 +127,27 @@ if "questions" in st.session_state and st.session_state.step >= len(st.session_s
             score_df = pd.concat([old, score_df], ignore_index=True)
         except FileNotFoundError:
             pass
-        score_df.to_csv("scores.csv", index=False)
+        
+    score_df.to_csv("scores.csv", index=False)
+    # Enregistrement automatique du détail de test
+    detail_data = []
+    for j, row in st.session_state.questions.iterrows():
+        selected = st.session_state.choices[j]
+        correct = row["bonne_reponse"]
+        is_correct = selected == correct
+        detail_data.append({
+            "date": now,
+            "categorie": row["categorie"],
+            "sous_theme": row["sous_theme"],
+            "question": row["question"],
+            "votre réponse": selected,
+            "bonne réponse": correct,
+            "résultat": "✅" if is_correct else "❌"
+        })
+    df_detail = pd.DataFrame(detail_data)
+    filename = "details_" + now.replace(":", "_").replace(" ", "_") + ".csv"
+    df_detail.to_csv(filename, index=False)
+    
         st.success("Score enregistré avec succès ✅")
 
     if st.button("📊 Voir mes résultats par type de question"):
