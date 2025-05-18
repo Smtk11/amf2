@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 from datetime import datetime
@@ -9,8 +8,28 @@ df = pd.read_csv("questions_amf_structure.csv")
 
 # 🎯 Interface de filtrage
 st.sidebar.title("🧠 Paramètres du test")
-themes = df["theme"].dropna().unique()
-selected_themes = st.sidebar.multiselect("Choisissez le(s) chapitre(s) :", sorted(themes.astype(str)))
+
+# Dictionnaire des chapitres
+chapitres_dict = {
+    "1": "1. Cadre institutionnel et réglementaire français, européen et international",
+    "2": "2. Déontologie, conformité et organisation déontologique des établissements",
+    "3": "3. Sécurité financière : lutte contre le blanchiment, le terrorisme et la corruption, embargos",
+    "4": "4. Réglementation « Abus de marché»",
+    "5": "5. Commercialisation d'instruments financiers, démarchage, vente à distance et conseil du client",
+    "6": "6. Relation client",
+    "7": "7. Instruments financiers, cryptoactifs et leurs risques",
+    "8": "8. Gestion collective/Gestion pour comptes de tiers",
+    "9": "9. Fonctionnement et organisation des marchés",
+    "10": "10. Postmarché",
+    "11": "11. Émissions et opérations sur titres",
+    "12": "12. Bases comptables et financières"
+}
+
+themes_disponibles = sorted(df["theme"].dropna().astype(str).unique())
+theme_options = [chapitres_dict.get(ch, ch) for ch in themes_disponibles]
+selected_labels = st.sidebar.multiselect("Choisissez le(s) chapitre(s) :", options=theme_options)
+label_to_id = {v: k for k, v in chapitres_dict.items()}
+selected_themes = [label_to_id[label] for label in selected_labels if label in label_to_id]
 
 if selected_themes:
     sous_themes = df[df["theme"].astype(str).isin(selected_themes)]["sous_theme"].dropna().unique()
@@ -40,6 +59,7 @@ if st.sidebar.button("🚀 Lancer le test") and not filtered.empty:
     st.session_state.start_time = datetime.now()
     st.session_state.questions = filtered.sample(min(nb_questions, len(filtered))).reset_index(drop=True)
 
+# Affichage des questions
 if "questions" in st.session_state and st.session_state.step < len(st.session_state.questions):
     i = st.session_state.step
     row = st.session_state.questions.iloc[i]
