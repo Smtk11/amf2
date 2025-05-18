@@ -65,8 +65,7 @@ if "questions" in st.session_state and st.session_state.step < len(st.session_st
     )
     st.session_state.choices[i] = choix
 
-    col1, col2 = st.columns([1, 1])
-    with col1:
+    with st.container():
         if st.button("✅ Vérifier", key=f"valider_{i}"):
             if choix == row["bonne_reponse"]:
                 st.session_state.feedback[i] = "✅ Bonne réponse !"
@@ -82,7 +81,7 @@ if "questions" in st.session_state and st.session_state.step < len(st.session_st
         if isinstance(row["justification"], str) and row["justification"].strip():
             st.info(f"ℹ️ {row['justification']}")
 
-    with col2:
+    with st.container():
         if st.button("➡️ Suivante", key=f"next_{i}"):
             if st.session_state.choices[i] == row["bonne_reponse"]:
                 st.session_state.score += 1
