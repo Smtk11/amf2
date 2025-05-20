@@ -269,3 +269,9 @@ else:
             for key in list(st.session_state.keys()):
                 del st.session_state[key]
             st.experimental_rerun()
+
+# Affichage du pied de page
+st.markdown("""
+---
+<center style='font-size:13px;'>© Copyright - Samet K </center>
+""", unsafe_allow_html=True)
