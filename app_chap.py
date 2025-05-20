@@ -1,10 +1,37 @@
-# Examen AMF avec mode examen ET mode entraînement amélioré
+# Examen AMF avec mode examen ET mode entraînement amélioré + reprise automatique
 import streamlit as st
 import pandas as pd
+import json
+import os
 from datetime import datetime
 
 st.set_page_config(page_title="Examen AMF - Mode", layout="wide")
 df = pd.read_csv("questions_amf_structure.csv")
+
+BACKUP_FILE = "backup_exam.json"
+
+# Fonction pour sauvegarder la session
+def save_exam_session():
+    if st.session_state.exam_mode:
+        session_data = {
+            "step": st.session_state.step,
+            "score": st.session_state.score,
+            "choices": st.session_state.choices,
+            "start_time": st.session_state.start_time.isoformat(),
+            "questions": st.session_state.questions.to_dict()
+        }
+        with open(BACKUP_FILE, "w") as f:
+            json.dump(session_data, f)
+
+# Fonction pour recharger une session sauvegardée
+def load_exam_session():
+    with open(BACKUP_FILE, "r") as f:
+        session_data = json.load(f)
+    st.session_state.step = session_data["step"]
+    st.session_state.score = session_data["score"]
+    st.session_state.choices = session_data["choices"]
+    st.session_state.start_time = datetime.fromisoformat(session_data["start_time"])
+    st.session_state.questions = pd.DataFrame.from_dict(session_data["questions"])
 
 # Dictionnaire des chapitres avec noms complets et nombre de questions pour le mode examen
 chapitres_dict = {
