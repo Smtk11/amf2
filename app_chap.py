@@ -33,6 +33,19 @@ def load_exam_session():
     st.session_state.start_time = datetime.fromisoformat(session_data["start_time"])
     st.session_state.questions = pd.DataFrame.from_dict(session_data["questions"])
 
+# Initialiser la variable exam_mode si elle n'existe pas
+if "exam_mode" not in st.session_state:
+    st.session_state.exam_mode = False
+
+# Afficher le bouton de reprise uniquement si on n'est pas déjà dans un test
+if os.path.exists(BACKUP_FILE) and "questions" not in st.session_state:
+    st.sidebar.markdown("## 💾 Session précédente détectée")
+    if st.sidebar.button("📂 Reprendre la dernière session enregistrée"):
+        st.session_state.exam_mode = True
+        load_exam_session()
+        st.experimental_rerun()
+
+
 # Dictionnaire des chapitres avec noms complets et nombre de questions pour le mode examen
 chapitres_dict = {
     "1": "1. Cadre institutionnel et réglementaire français, européen et international",
@@ -63,6 +76,20 @@ chapitres_exam = {
     "11": (chapitres_dict["11"], 2),
     "12": (chapitres_dict["12"], 6)
 }
+
+
+# Dictionnaire des chapitres...
+# (le reste du code continue comme précédemment)
+
+# Si une sauvegarde existe, proposer de reprendre
+if os.path.exists(BACKUP_FILE) and "questions" not in st.session_state:
+    with open(BACKUP_FILE, "r") as f:
+        saved = json.load(f)
+    if st.button("📂 Reprendre la dernière session enregistrée"):
+        st.session_state.exam_mode = True
+        load_exam_session()
+        st.experimental_rerun()
+
 
 # MODE EXAMEN ----------------------------------------------------------
 if st.session_state.exam_mode:
