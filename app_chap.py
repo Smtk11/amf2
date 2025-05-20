@@ -1,50 +1,10 @@
-# Examen AMF avec mode examen ET mode entraînement amélioré + reprise automatique
+# Examen AMF avec mode examen ET mode entraînement amélioré
 import streamlit as st
 import pandas as pd
-import json
-import os
 from datetime import datetime
 
 st.set_page_config(page_title="Examen AMF - Mode", layout="wide")
 df = pd.read_csv("questions_amf_structure.csv")
-
-BACKUP_FILE = "backup_exam.json"
-
-# Fonction pour sauvegarder la session
-def save_exam_session():
-    if st.session_state.exam_mode:
-        session_data = {
-            "step": st.session_state.step,
-            "score": st.session_state.score,
-            "choices": st.session_state.choices,
-            "start_time": st.session_state.start_time.isoformat(),
-            "questions": st.session_state.questions.to_dict()
-        }
-        with open(BACKUP_FILE, "w") as f:
-            json.dump(session_data, f)
-
-# Fonction pour recharger une session sauvegardée
-def load_exam_session():
-    with open(BACKUP_FILE, "r") as f:
-        session_data = json.load(f)
-    st.session_state.step = session_data["step"]
-    st.session_state.score = session_data["score"]
-    st.session_state.choices = session_data["choices"]
-    st.session_state.start_time = datetime.fromisoformat(session_data["start_time"])
-    st.session_state.questions = pd.DataFrame.from_dict(session_data["questions"])
-
-# Initialiser la variable exam_mode si elle n'existe pas
-if "exam_mode" not in st.session_state:
-    st.session_state.exam_mode = False
-
-# Afficher le bouton de reprise uniquement si on n'est pas déjà dans un test
-if os.path.exists(BACKUP_FILE) and "questions" not in st.session_state:
-    st.sidebar.markdown("## 💾 Session précédente détectée")
-    if st.sidebar.button("📂 Reprendre la dernière session enregistrée"):
-        st.session_state.exam_mode = True
-        load_exam_session()
-        st.experimental_rerun()
-
 
 # Dictionnaire des chapitres avec noms complets et nombre de questions pour le mode examen
 chapitres_dict = {
@@ -76,6 +36,16 @@ chapitres_exam = {
     "11": (chapitres_dict["11"], 2),
     "12": (chapitres_dict["12"], 6)
 }
+
+# Sélection du mode
+if "exam_mode" not in st.session_state:
+    st.session_state.exam_mode = False
+
+col1, col2 = st.columns([1, 5])
+if col1.button("🎓 Lancer le mode examen"):
+    st.session_state.exam_mode = True
+if col1.button("📘 Mode Entraînement"):
+    st.session_state.exam_mode = False
 
 # MODE EXAMEN ----------------------------------------------------------
 if st.session_state.exam_mode:
