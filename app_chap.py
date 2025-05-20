@@ -140,7 +140,7 @@ else:
 
     types = df["categorie"].dropna().unique()
     selected_types = st.sidebar.multiselect("Type de question :", types, default=types)
-    nb_questions = st.sidebar.number_input("Nombre de questions à tirer :", min_value=1, max_value=100, value=10)
+    nb_questions = st.sidebar.number_input("Nombre de questions à tirer :", min_value=1, max_value=500, value=10)
 
     filtered = df[
         df["theme"].astype(str).isin(selected_themes) &
