@@ -77,20 +77,6 @@ chapitres_exam = {
     "12": (chapitres_dict["12"], 6)
 }
 
-
-# Dictionnaire des chapitres...
-# (le reste du code continue comme précédemment)
-
-# Si une sauvegarde existe, proposer de reprendre
-if os.path.exists(BACKUP_FILE) and "questions" not in st.session_state:
-    with open(BACKUP_FILE, "r") as f:
-        saved = json.load(f)
-    if st.button("📂 Reprendre la dernière session enregistrée"):
-        st.session_state.exam_mode = True
-        load_exam_session()
-        st.experimental_rerun()
-
-
 # MODE EXAMEN ----------------------------------------------------------
 if st.session_state.exam_mode:
     st.title("📝 Mode Examen AMF")
