@@ -93,11 +93,28 @@ if st.session_state.exam_mode:
         st.markdown("### 📊 Score par chapitre")
         st.dataframe(chap_stat[["Nom", "Score"]])
 
+                # Affichage détaillé des réponses
+        results = []
+        for j, row in st.session_state.questions.iterrows():
+            selected = st.session_state.choices[j]["selected"] if j < len(st.session_state.choices) else None
+            correct = row["bonne_reponse"]
+            is_correct = selected == correct
+            results.append({
+                "categorie": row["categorie"],
+                "sous_theme": row["sous_theme"],
+                "question": row["question"],
+                "votre réponse": f"{selected} - {row[f'Choix_{selected}']}" if selected else "Aucune",
+                "bonne réponse": f"{correct} - {row[f'Choix_{correct}']}",
+                "résultat": "✅" if is_correct else "❌"
+            })
+
+        st.markdown("### 📋 Détail des réponses")
+        st.dataframe(pd.DataFrame(results))
+
         if st.button("🔁 Refaire l'examen"):
             for k in list(st.session_state.keys()):
                 del st.session_state[k]
             st.experimental_rerun()
-
 
 # MODE ENTRAINEMENT ----------------------------------------------------------
 else:
