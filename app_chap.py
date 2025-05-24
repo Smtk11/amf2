@@ -1,4 +1,4 @@
-# Examen AMF avec mode examen ET mode entraînement amélioré
+# Examen AMF avec tirage fixe par catégorie (33 A, 87 C)
 import streamlit as st
 import pandas as pd
 from datetime import datetime
@@ -6,7 +6,7 @@ from datetime import datetime
 st.set_page_config(page_title="Examen AMF - Mode", layout="wide")
 df = pd.read_csv("questions_amf_structure.csv")
 
-# Dictionnaire des chapitres avec noms complets et nombre de questions pour le mode examen
+# Dictionnaire des chapitres
 chapitres_dict = {
     "1": "1. Cadre institutionnel et réglementaire français, européen et international",
     "2": "2. Déontologie, conformité et organisation déontologique des établissements",
@@ -20,21 +20,6 @@ chapitres_dict = {
     "10": "10. Postmarché",
     "11": "11. Émissions et opérations sur titres",
     "12": "12. Bases comptables et financières"
-}
-
-chapitres_exam = {
-    "1": (chapitres_dict["1"], 14),
-    "2": (chapitres_dict["2"], 6),
-    "3": (chapitres_dict["3"], 3),
-    "4": (chapitres_dict["4"], 2),
-    "5": (chapitres_dict["5"], 6),
-    "6": (chapitres_dict["6"], 25),
-    "7": (chapitres_dict["7"], 21),
-    "8": (chapitres_dict["8"], 25),
-    "9": (chapitres_dict["9"], 7),
-    "10": (chapitres_dict["10"], 3),
-    "11": (chapitres_dict["11"], 2),
-    "12": (chapitres_dict["12"], 6)
 }
 
 # Sélection du mode
@@ -51,15 +36,9 @@ if col1.button("📘 Mode Entraînement"):
 if st.session_state.exam_mode:
     st.title("📝 Mode Examen AMF")
     if "questions" not in st.session_state:
-        all_questions = []
-        for chap_num, (_, q_count) in chapitres_exam.items():
-            questions_chap = df[df["theme"].astype(str) == chap_num]
-            if len(questions_chap) >= q_count:
-                all_questions.append(questions_chap.sample(q_count))
-            else:
-                all_questions.append(questions_chap)
-
-        st.session_state.questions = pd.concat(all_questions).sample(frac=1).reset_index(drop=True)
+        questions_a = df[df["categorie"] == "A"].sample(n=33)
+        questions_c = df[df["categorie"] == "C"].sample(n=87)
+        st.session_state.questions = pd.concat([questions_a, questions_c]).sample(frac=1).reset_index(drop=True)
         st.session_state.step = 0
         st.session_state.score = 0
         st.session_state.choices = []
@@ -97,15 +76,13 @@ if st.session_state.exam_mode:
         st.header("🎯 Résultat de l'examen")
         results_df = pd.DataFrame(st.session_state.choices)
         correct_a = results_df[(results_df["categorie"] == "A") & (results_df["selected"] == results_df["correct"])].shape[0]
-        total_a = results_df[results_df["categorie"] == "A"].shape[0]
         correct_c = results_df[(results_df["categorie"] == "C") & (results_df["selected"] == results_df["correct"])].shape[0]
-        total_c = results_df[results_df["categorie"] == "C"].shape[0]
         total = len(results_df)
         score_pct = round((st.session_state.score / total) * 100, 2)
 
         st.markdown(f"**Score final : {st.session_state.score} / {total} soit {score_pct}%**")
-        st.markdown(f"- ✅ Bonnes réponses Catégorie A : **{correct_a} / {total_a}**")
-        st.markdown(f"- ✅ Bonnes réponses Catégorie C : **{correct_c} / {total_c}**")
+        st.markdown(f"- ✅ Bonnes réponses Catégorie A : **{correct_a} / 33**")
+        st.markdown(f"- ✅ Bonnes réponses Catégorie C : **{correct_c} / 87**")
 
         chap_summary = results_df.copy()
         chap_summary["is_correct"] = chap_summary["selected"] == chap_summary["correct"]
@@ -120,6 +97,7 @@ if st.session_state.exam_mode:
             for k in list(st.session_state.keys()):
                 del st.session_state[k]
             st.experimental_rerun()
+
 
 # MODE ENTRAINEMENT ----------------------------------------------------------
 else:
