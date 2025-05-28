@@ -1,4 +1,4 @@
-# Examen AMF avec tirage fixe par catégorie (33 A, 87 C)
+# Examen AMF avec mode examen ET mode entraînement amélioré
 import streamlit as st
 import pandas as pd
 from datetime import datetime
@@ -6,7 +6,7 @@ from datetime import datetime
 st.set_page_config(page_title="Examen AMF - Mode", layout="wide")
 df = pd.read_csv("questions_amf_structure.csv")
 
-# Dictionnaire des chapitres
+# Dictionnaire des chapitres avec noms complets et nombre de questions pour le mode examen
 chapitres_dict = {
     "1": "1. Cadre institutionnel et réglementaire français, européen et international",
     "2": "2. Déontologie, conformité et organisation déontologique des établissements",
@@ -22,6 +22,21 @@ chapitres_dict = {
     "12": "12. Bases comptables et financières"
 }
 
+chapitres_exam = {
+    "1": (chapitres_dict["1"], 14),
+    "2": (chapitres_dict["2"], 6),
+    "3": (chapitres_dict["3"], 3),
+    "4": (chapitres_dict["4"], 2),
+    "5": (chapitres_dict["5"], 6),
+    "6": (chapitres_dict["6"], 25),
+    "7": (chapitres_dict["7"], 21),
+    "8": (chapitres_dict["8"], 25),
+    "9": (chapitres_dict["9"], 7),
+    "10": (chapitres_dict["10"], 3),
+    "11": (chapitres_dict["11"], 2),
+    "12": (chapitres_dict["12"], 6)
+}
+
 # Sélection du mode
 if "exam_mode" not in st.session_state:
     st.session_state.exam_mode = False
@@ -33,110 +48,78 @@ if col1.button("📘 Mode Entraînement"):
     st.session_state.exam_mode = False
 
 # MODE EXAMEN ----------------------------------------------------------
-chapitres_exam = {
-    "1": 14, "2": 6, "3": 3, "4": 2, "5": 6, "6": 25,
-    "7": 21, "8": 25, "9": 7, "10": 3, "11": 2, "12": 6
-}
+if st.session_state.exam_mode:
+    st.title("📝 Mode Examen AMF")
+    if "questions" not in st.session_state:
+        all_questions = []
+        for chap_num, (_, q_count) in chapitres_exam.items():
+            questions_chap = df[df["theme"].astype(str) == chap_num]
+            if len(questions_chap) >= q_count:
+                all_questions.append(questions_chap.sample(q_count))
+            else:
+                all_questions.append(questions_chap)
 
-TARGET_A = 33
-TARGET_C = 87
+        st.session_state.questions = pd.concat(all_questions).sample(frac=1).reset_index(drop=True)
+        st.session_state.step = 0
+        st.session_state.score = 0
+        st.session_state.choices = []
+        st.session_state.start_time = datetime.now()
 
-if "questions" not in st.session_state:
-    st.title("🎓 Lancer le mode Examen")
-    all_questions = []
-    for chap, n_q in chapitres_exam.items():
-        chap_df = df[df["theme"].astype(str) == chap]
-        if not chap_df.empty:
-            sampled = chap_df.sample(n=min(n_q, len(chap_df)), random_state=42)
-            all_questions.append(sampled)
-    full_exam = pd.concat(all_questions).reset_index(drop=True)
+    if st.session_state.step < len(st.session_state.questions):
+        now = datetime.now()
+        elapsed = now - st.session_state.start_time
+        minutes = elapsed.seconds // 60
+        seconds = elapsed.seconds % 60
+        st.markdown(f"⏱️ Temps écoulé : **{minutes} min {seconds:02d} sec**")
+        i = st.session_state.step
+        row = st.session_state.questions.iloc[i]
 
-    df_c = full_exam[full_exam["categorie"] == "C"]
-    df_a = full_exam[full_exam["categorie"] == "A"]
+        st.markdown(f"### Question {i+1} / {len(st.session_state.questions)}")
+        st.markdown(f"**Chapitre {chapitres_dict.get(str(row['theme']), row['theme'])} – {row['sous_theme']}**")
+        st.markdown(f"{row['question']}")
 
-    df_c_final = df_c.sample(n=min(TARGET_C, len(df_c)), random_state=42)
-    df_a_final = df_a.sample(n=min(TARGET_A, len(df_a)), random_state=42)
+        choix = st.radio("Votre réponse :", ["A", "B", "C"], format_func=lambda x: f"{x} - {row[f'Choix_{x}']}", key=f"choix_{i}")
 
-    df_final = pd.concat([df_c_final, df_a_final]).sample(frac=1, random_state=42).reset_index(drop=True)
+        if st.button("Valider", key=f"valider_{i}"):
+            st.session_state.choices.append({
+                "question": row["question"],
+                "theme": row["theme"],
+                "categorie": row["categorie"],
+                "sous_theme": row["sous_theme"],
+                "selected": choix,
+                "correct": row["bonne_reponse"]
+            })
+            if choix == row["bonne_reponse"]:
+                st.session_state.score += 1
+            st.session_state.step += 1
 
-    st.session_state.questions = df_final
-    st.session_state.step = 0
-    st.session_state.score = 0
-    st.session_state.choices = []
-    st.session_state.start_time = datetime.now()
+    elif st.session_state.step >= len(st.session_state.questions):
+        st.header("🎯 Résultat de l'examen")
+        results_df = pd.DataFrame(st.session_state.choices)
+        correct_a = results_df[(results_df["categorie"] == "A") & (results_df["selected"] == results_df["correct"])].shape[0]
+        total_a = results_df[results_df["categorie"] == "A"].shape[0]
+        correct_c = results_df[(results_df["categorie"] == "C") & (results_df["selected"] == results_df["correct"])].shape[0]
+        total_c = results_df[results_df["categorie"] == "C"].shape[0]
+        total = len(results_df)
+        score_pct = round((st.session_state.score / total) * 100, 2)
 
-if st.session_state.step < len(st.session_state.questions):
-    i = st.session_state.step
-    row = st.session_state.questions.iloc[i]
+        st.markdown(f"**Score final : {st.session_state.score} / {total} soit {score_pct}%**")
+        st.markdown(f"- ✅ Bonnes réponses Catégorie A : **{correct_a} / {total_a}**")
+        st.markdown(f"- ✅ Bonnes réponses Catégorie C : **{correct_c} / {total_c}**")
 
-    now = datetime.now()
-    elapsed = now - st.session_state.start_time
-    minutes = elapsed.seconds // 60
-    seconds = elapsed.seconds % 60
+        chap_summary = results_df.copy()
+        chap_summary["is_correct"] = chap_summary["selected"] == chap_summary["correct"]
+        chap_stat = chap_summary.groupby("theme")["is_correct"].agg(["sum", "count"]).reset_index()
+        chap_stat.columns = ["Chapitre", "Bonnes réponses", "Total"]
+        chap_stat["Nom"] = chap_stat["Chapitre"].astype(str).map(chapitres_dict)
+        chap_stat["Score"] = chap_stat["Bonnes réponses"].astype(str) + "/" + chap_stat["Total"].astype(str)
+        st.markdown("### 📊 Score par chapitre")
+        st.dataframe(chap_stat[["Nom", "Score"]])
 
-    st.markdown(f"⏱️ Temps écoulé : **{minutes} min {seconds:02d} sec**")
-    st.markdown(f"### Question {i+1} / {len(st.session_state.questions)}")
-    st.markdown(f"**Chapitre {chapitres_dict.get(str(row['theme']), row['theme'])} – {row['sous_theme']}**")
-    st.markdown(row["question"])
-
-    choix = st.radio("Votre réponse :", ["A", "B", "C"], format_func=lambda x: f"{x} - {row[f'Choix_{x}']}", key=f"choix_{i}")
-
-    if st.button("Valider", key=f"valider_{i}"):
-        st.session_state.choices.append({
-            "question": row["question"],
-            "theme": row["theme"],
-            "categorie": row["categorie"],
-            "sous_theme": row["sous_theme"],
-            "selected": choix,
-            "correct": row["bonne_reponse"]
-        })
-        if choix == row["bonne_reponse"]:
-            st.session_state.score += 1
-        st.session_state.step += 1
-
-elif st.session_state.step >= len(st.session_state.questions):
-    st.header("🎯 Résultat de l'examen")
-    results_df = pd.DataFrame(st.session_state.choices)
-
-    correct_a = results_df[(results_df["categorie"] == "A") & (results_df["selected"] == results_df["correct"])].shape[0]
-    correct_c = results_df[(results_df["categorie"] == "C") & (results_df["selected"] == results_df["correct"])].shape[0]
-    score_pct = round((st.session_state.score / len(results_df)) * 100, 2)
-
-    st.markdown(f"**Score final : {st.session_state.score} / {len(results_df)} soit {score_pct}%**")
-    st.markdown(f"- ✅ Bonnes réponses Catégorie A : **{correct_a} / 33**")
-    st.markdown(f"- ✅ Bonnes réponses Catégorie C : **{correct_c} / 87**")
-
-    chap_summary = results_df.copy()
-    chap_summary["is_correct"] = chap_summary["selected"] == chap_summary["correct"]
-    chap_stat = chap_summary.groupby("theme")["is_correct"].agg(["sum", "count"]).reset_index()
-    chap_stat.columns = ["Chapitre", "Bonnes réponses", "Total"]
-    chap_stat["Nom"] = chap_stat["Chapitre"].astype(str).map(chapitres_dict)
-    chap_stat["Score"] = chap_stat["Bonnes réponses"].astype(str) + "/" + chap_stat["Total"].astype(str)
-
-    st.markdown("### 📊 Score par chapitre")
-    st.dataframe(chap_stat[["Nom", "Score"]])
-
-    results = []
-    for j, row in st.session_state.questions.iterrows():
-        selected = st.session_state.choices[j]["selected"]
-        correct = row["bonne_reponse"]
-        is_correct = selected == correct
-        results.append({
-            "categorie": row["categorie"],
-            "sous_theme": row["sous_theme"],
-            "question": row["question"],
-            "votre réponse": f"{selected} - {row[f'Choix_{selected}']}" if selected else "Aucune",
-            "bonne réponse": f"{correct} - {row[f'Choix_{correct}']}",
-            "résultat": "✅" if is_correct else "❌"
-        })
-
-    st.markdown("### 📋 Détail des réponses")
-    st.dataframe(pd.DataFrame(results))
-
-    if st.button("🔁 Refaire l'examen"):
-        for key in list(st.session_state.keys()):
-            del st.session_state[key]
-        st.experimental_rerun()
+        if st.button("🔁 Refaire l'examen"):
+            for k in list(st.session_state.keys()):
+                del st.session_state[k]
+            st.experimental_rerun()
 
 # MODE ENTRAINEMENT ----------------------------------------------------------
 else:
